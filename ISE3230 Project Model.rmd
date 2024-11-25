@@ -1,0 +1,81 @@
+---
+title: "ISE3230 Project Model - LinkNYC Optimization"
+author: "Catherine Ling.273, Benjamin Strong.241, Jaden Thomas.4504"
+date: "2024-11-25"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Optimization Model
+
+## Problem Description
+We aim to optimize the installation of LinkNYC kiosks across census tracts in New York City. The objective is to minimize installation costs while ensuring adequate kiosk coverage for the population and meeting specific constraints.
+
+## Model Formulation
+
+### Constants
+- $\mathbf{P}$: Vector of populations for each census tract ($P_i$ for tract $i$).
+- $\mathbf{\text{Cost}}$: Vector of installation costs per kiosk for each census tract ($c_i$ for tract $i$, determined by the borough it belongs to).
+- $\mathbf{\text{POI}}$: Vector of points of interest for each census tract ($\text{POI}_i$ for tract $i$).
+- $\mathbf{K}$: Vector of current kiosks for each census tract ($K_i$ for tract $i$).
+- $\rho$: Minimum population per kiosk.
+- $\text{MinPOI}$: Minimum number of points of interest required to consider installing kiosks.
+- $\text{MinPop}$: Minimum population required to consider installing kiosks.
+- $M$: A large constant for binary variable $z_i$ activation.
+
+### Decision Variables
+- $x_i$: Number of new kiosks to install in census tract $i$ ($x_i \geq 0, x_i \in \mathbb{Z}$).
+- $z_i$: Binary variable indicating whether kiosks are installed in tract $i$  ($z_i \in \{0, 1\}$).
+
+### Objective Function
+$$
+\text{Minimize } Z = \sum_{i}^{2327} c_i \cdot x_i
+$$
+
+Where $c_i$ is the cost assigned to the borough where tract $i$ is located.
+
+### Constraints
+
+1. **Population Coverage:**
+  $$
+   \frac{P_i}{\rho} \leq  K_i + x_i \quad \forall i
+  $$
+
+2. **Binary Activation Link:**
+  $$
+   x_i \leq M \cdot z_i \quad \forall i
+  $$
+
+3. **Thresholds for POIs and Population:**
+  $$
+   z_i \leq \frac{\text{POI}_i}{\text{MinPOI}}, \quad z_i \leq \frac{P_i}{\text{MinPop}} \quad \forall i
+  $$
+
+4. **Non-Negativity and Integer Constraints:**
+  $$
+   x_i \geq 0, \quad x_i \in \mathbb{Z}, \quad z_i \in \{0, 1\}
+  $$
+
+---
+
+## Complete Formulation
+
+Objective:
+$$
+\text{Minimize } Z = \sum_{i} c_i \cdot x_i
+$$
+
+Subject to:
+$$
+\begin{aligned}
+P_i &\leq \rho \cdot (K_i + x_i) \quad \forall i \\
+x_i &\leq M \cdot z_i \quad \forall i \\
+z_i &\leq \frac{\text{POI}_i}{\text{MinPOI}} \forall i \\
+z_i &\leq \frac{P_i}{\text{MinPop}} \quad \forall i \\
+x_i &\geq 0, \quad x_i \in \mathbb{Z}, \quad z_i \in \{0, 1\}
+\end{aligned}
+$$
