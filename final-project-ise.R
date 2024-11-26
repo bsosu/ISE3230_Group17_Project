@@ -61,14 +61,42 @@ total <- total %>% mutate(pop_per_kiosk=estimate/kiosks) %>% rename(ct_title=NAM
 tract_pop_per_kiosk <- left_join(nyc_tracts, total, by=join_by("GEOID"=="GEOID"))
 track_poi <- left_join(nyc_tracts, poi_total, by=join_by("GEOID"=="GEOID"))
 
+df <- read_csv("/Users/jadenthomas/Desktop/OSU/OSU Senior/Fall/ISE 3230/after_optimization_kiosks.csv")
+df$GEOID <- as.character(df$GEOID)
+
+df %>% View()
+demo_table <- df %>% dplyr::select(population, COUNTYFP, kiosks, pois, kiosks_added) %>% group_by(COUNTYFP) %>% summarize("Census Tracts"=n(), mean_poi=mean(pois, na.rm=T), sd_poi=sd(pois, na.rm=T),
+                                        mean_pop=mean(population), sd_pop=sd(population),
+                                        current=sum(kiosks),
+                                        added=sum(kiosks_added)) %>% 
+  mutate(current=as.character(current), added=as.character(added),
+    `Census Tracts`=as.character(`Census Tracts`), poi_data=paste0(round(mean_poi, 1), " (", round(sd_poi, 1), ")"),
+         pop_data=paste0(round(mean_pop, 1), " (", round(sd_pop, 1), ")")) %>%
+  dplyr::select(COUNTYFP, `Census Tracts`, poi_data, pop_data, current, added) %>%
+  pivot_longer(cols=-COUNTYFP, names_to="Variable", values_to="Value") %>%
+  pivot_wider(names_from="COUNTYFP", values_from="Value")
+
+colnames(demo_table) <- c("Variable", "Bronx", "Brooklyn", "Manhattan", "Queens", "Staten Island")
+demo_table$Variable <- c("Census Tracts", "POI", "Population", "Current Kiosks", "Added Kiosks")
+print(demo_table)
+
+new_locs <- left_join(nyc_tracts, df, by=join_by("GEOID"=="GEOID"))
+
 link_locations_plot <- ggplot(data=nyc_tracts) +
   geom_sf(aes(fill=COUNTYFP), size=0.2, alpha=0.5) +
   theme_classic() +
-  geom_point(data=x, aes(x=Longitude, y=Latitude), size=.5) +
+  geom_point(data=df, aes(x=Longitude, y=Latitude), size=.5) +
   labs(title="LinkNYC Locations") +
   theme(panel.grid=element_blank(), axis.ticks =element_blank(), axis.title = element_blank(),
         axis.line = element_blank(), axis.text=element_blank(), legend.position="none", plot.title=element_text(size=25, hjust=.5))
 
+ggplot(data=new_locs) +
+  geom_sf(aes(fill=kiosks_added), size=0.1, alpha=0.5) +
+  scale_fill_gradient(low="white", high="black") +
+  theme_classic() +
+  labs(title="New LinkNYC Locations by Census Tract", fill="Kiosks Added") +
+  theme(panel.grid=element_blank(), axis.ticks =element_blank(), axis.title = element_blank(),
+        axis.line = element_blank(), axis.text=element_blank(), plot.title=element_text(size=25, hjust=.5))
 
 # Final df with useful columns, may need to remove stuff
 actual_total <- left_join(tract_pop_per_kiosk, poi_total, by=join_by("GEOID"=="GEOID")) %>% relocate(c(GEOID, kiosks, population, pop_moe, pop_per_kiosk, pois, ct_title))
@@ -78,8 +106,6 @@ write_csv(actual_total, "poi_and_kiosk_by_ct_data.csv")
 
 nyc_tracts %>% filter(COUNTYFP=="047") %>% ggplot() + geom_sf(size=0.2) +
   geom_point(data=filter(x, Borough=="Brooklyn"), aes(x=Longitude, y=Latitude), size=0.5)
-
-x$Borough %>% unique()
 
 ggplot(data=nyc_tracts) +
   geom_sf(aes(fill=COUNTYFP), size=0.2, alpha=0.5) +
@@ -97,7 +123,7 @@ pop_tract <- left_join(nyc_tracts, population_data, by=join_by("GEOID"=="GEOID")
 
 
 
-ggplot(data=tract_pop_per_kiosk) +
+tract_pop_per_kiosk_plot <- ggplot(data=tract_pop_per_kiosk) +
   geom_sf(aes(fill=pop_per_kiosk), size=0.2) +
   theme_classic() +
   geom_point(data=x, aes(x=Longitude, y=Latitude), size=0.1) +
@@ -116,12 +142,15 @@ pop_tract %>% filter(COUNTYFP=="047") %>% ggplot() +
   theme(panel.grid=element_blank(), axis.ticks =element_blank(), axis.title = element_blank(),
         axis.line = element_blank(), axis.text=element_blank(), plot.title=element_text(size=25, hjust=.5))
 
+df <- read_csv("/Users/jadenthomas/Desktop/OSU/OSU Senior/Fall/ISE 3230/after_optimization_kiosks.csv")
+df$GEOID <- as.character(df$GEOID)
+new_locs <- left_join(nyc_tracts, df, by=join_by("GEOID"=="GEOID"))
 
-pop_plot
-
-ggarrange(link_locations_plot, pop_plot, nrow=2)
-
-x %>% filter(`Installation Status`=="Live") %>% group_by(Borough) %>% summarize(n=n())
-
-x$`Census Tract (CT)`
+ggplot(data=new_locs) +
+  geom_sf(aes(fill=kiosks_added), size=0.1, alpha=0.5) +
+  scale_fill_gradient(low="white", high="red") +
+  theme_classic() +
+  labs(title="New LinkNYC Locations by Census Tract", fill="Kiosks Added") +
+  theme(panel.grid=element_blank(), axis.ticks =element_blank(), axis.title = element_blank(),
+        axis.line = element_blank(), axis.text=element_blank(), plot.title=element_text(size=25, hjust=.5))
 
